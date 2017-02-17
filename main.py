@@ -14,9 +14,12 @@ def import_test_data():
     test_data= np.loadtxt(file_path, dtype= float , delimiter= ',', skiprows= 1)
     return test_data
 
-def cost(X,y,Theta):
+def norm(theta,p):
+    return np.sum(theta**p,axis=0)
+
+def cost(X,y,Theta,lambdaa,p):
     m = y.size
-    J = np.sum((np.dot(X,Theta) - y)**2,axis=0) / (2*m)
+    J = np.sum((np.dot(X,Theta) - y)**2,axis=0) + (lambdaa*norm(theta,p) ) / (2*m)
     return J[0]
 
 def matformula(X,y,lambdaa):
@@ -26,17 +29,21 @@ def matformula(X,y,lambdaa):
     theta = np.dot(i,y)
     return theta
 
-def gradientDescent(X,y,theta,alpha,iter,pnorm):
+def gradientDescentL2norm(X,y,theta,alpha,iter,pnorm,lambdaa):
     m = y.size
     Jhistory = np.zeros(iter).reshape(iter,1)
     for i in range(0,iter):
         xtrans = np.transpose(X)
         loss = np.dot(X, theta) - y
         gradient = np.dot(xtrans, loss) / m
-        theta = theta - (alpha * gradient)
+        theta = theta * (1 - (alpha * lambdaa / m))- (alpha * gradient)
         Jhistory[i,0] = cost(X,y,theta)
     #return np.append(theta,Jhistory)
     return theta
+
+def featureNormalization(X):
+
+
 
 
 def descent():
@@ -50,6 +57,7 @@ def descent():
 
     X = t[:,range(1,pc+1)]
     X = X[range(0,300),:]
+    X = featureNormalization(X)
     o = np.ones(m).reshape(m,1)
     X = np.append(o,X,axis = 1) #Appending column of 1s to the feature matrix
 
@@ -57,15 +65,15 @@ def descent():
 
     iter = 90000    #setting the number of iterations
     alpha = 0.000006    #setting the step size of descent
-    lambdaa = 1
+    lambdaa = 0
     pnorm = 2
 
-    final = gradientDescent(X,y,theta,alpha,iter,pnorm,lambdaa)   #Obtaining theta via Gradient Descent Algorithm
+    final = gradientDescentL2norm(X,y,theta,alpha,iter,pnorm,lambdaa)   #Obtaining theta via Gradient Descent Algorithm
     final2 = matformula(X,y)    #Obtaining theta via Normal equation
 
     #testing the results
-    print(cost(X,y,final2))
-    print(cost(X,y,final))
+    print(cost(X,y,final2,lambdaa,p))
+    print(cost(X,y,final,lambdaa,p))
     np.savetxt('test.txt',final)
 
     return final2
