@@ -1,75 +1,90 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import math
+#import matplotlib.pyplot as plt
 import os
 
+#Import Training Data
 def import_train_data():
     file_dir = os.path.dirname(__file__)
     file_path= os.path.join(file_dir,'data/train.csv')
     train_data= np.loadtxt(file_path, dtype= float , delimiter= ',', skiprows= 1)
     return train_data
 
+#Import Test data
 def import_test_data():
     file_dir = os.path.dirname(__file__)
     file_path= os.path.join(file_dir,'data/test.csv')
     test_data= np.loadtxt(file_path, dtype= float , delimiter= ',', skiprows= 1)
     return test_data
 
+#PNorm of theta
 def norm(theta,p):
-    return np.sum(theta**p,axis=0)
+    return np.sum(np.absolute(theta) **p,axis=0)
 
-def cost(X,y,Theta,lambdaa,p):
+#Cost function
+def cost(X,y,theta,lambdaa,p):
     m = y.size
-    J = np.sum((np.dot(X,Theta) - y)**2,axis=0) + (lambdaa*norm(theta,p) ) / (2*m)
+    J = (np.sum((np.dot(X,theta) - y)**2,axis=0) + (lambdaa*norm(theta,p) )) / (2*m)
     return J[0]
 
-def matformula(X,y,lambdaa):
+#Normal Equation
+def NormalEquation(X, y, lambdaa):
     tbi = np.dot(np.transpose(X),X)
-    tbi = tbi + lambdaa*np.identity(tbi.size)
+    tbi = tbi + lambdaa*np.identity(math.floor((tbi.size)**0.5))
     i = np.dot(np.linalg.inv(tbi),np.transpose(X))
     theta = np.dot(i,y)
     return theta
 
-def gradientDescentL2norm(X,y,theta,alpha,iter,pnorm,lambdaa):
+#Gradient Descent algorithm with penalisation on pnorm of theta
+def gradientDescent(X,y,theta,alpha,iter,pnorm,lambdaa):
     m = y.size
     Jhistory = np.zeros(iter).reshape(iter,1)
     for i in range(0,iter):
         xtrans = np.transpose(X)
         loss = np.dot(X, theta) - y
         gradient = np.dot(xtrans, loss) / m
-        theta = theta * (1 - (alpha * lambdaa / m))- (alpha * gradient)
-        Jhistory[i,0] = cost(X,y,theta)
+        theta = theta * (1 - (alpha * lambdaa * pnorm/ (2*m)))- (alpha * gradient)
+        Jhistory[i,0] = cost(X,y,theta,lambdaa,pnorm)
     #return np.append(theta,Jhistory)
     return theta
 
-def featureNormalization(X):
-
-
-
+#Outputting the results of the test data
+def output(string,data):
+    m=data.size
+    id = np.array(list(range(m)))
+    data = np.squeeze(np.asarray(data))
+    outdat = np.column_stack((id.flatten(),data.flatten()))
+    #final_data = np.append(['ID','MEDV'],final_data,axis=0)
+    np.savetxt(string,outdat,delimiter=',',header="ID,MEDV")
 
 def descent():
     t=import_train_data() #Import training data
     pc = t[1,:].size -2     #Setting the parameter count
 
     y = t[range(0,300),pc+1]
-    #y = y[range(0,300),:]
     m = y.size
     y = y.reshape(m,1) #reshaping the original output in a matrix
 
     X = t[:,range(1,pc+1)]
     X = X[range(0,300),:]
-    X = featureNormalization(X)
     o = np.ones(m).reshape(m,1)
     X = np.append(o,X,axis = 1) #Appending column of 1s to the feature matrix
 
     theta = np.zeros(pc+1).reshape(pc+1,1) #Initializing theta vector to 0s
 
-    iter = 90000    #setting the number of iterations
-    alpha = 0.000006    #setting the step size of descent
-    lambdaa = 0
-    pnorm = 2
+    iter = 120000    #setting the number of iterations
+    alpha = 0.0000063    #setting the step size of descent
+    lambdaa = 0     #setting lambda for regulariser
+    p = 2       #setting p norm
 
-    final = gradientDescentL2norm(X,y,theta,alpha,iter,pnorm,lambdaa)   #Obtaining theta via Gradient Descent Algorithm
-    final2 = matformula(X,y)    #Obtaining theta via Normal equation
+    final = gradientDescent(X,y,theta,alpha,iter,p,lambdaa)   #Obtaining theta via Gradient Descent Algorithm
+    final2 = NormalEquation(X, y, lambdaa)    #Obtaining theta via Normal equation
+
+    #Outputting files
+    output('output.csv',test_on_data(gradientDescent(X,y,theta,alpha,iter,2,lambdaa)))
+    output('output_p1.csv',test_on_data(gradientDescent(X,y,theta,alpha,iter,1.2,lambdaa)))
+    output('output_p2.csv',test_on_data(gradientDescent(X,y,theta,alpha,iter,1.5,lambdaa)))
+    output('output_p3.csv',test_on_data(gradientDescent(X,y,theta,alpha,iter,1.8,lambdaa)))
 
     #testing the results
     print(cost(X,y,final2,lambdaa,p))
@@ -83,7 +98,6 @@ def crossvalidation(theta):
     pc = t[1,:].size -2
 
     y = t[range(300,400),pc+1]
-    #y = y[range(300,400),:]
     m = y.size
     y = y.reshape(m,1) #reshaping the original output in a matrix
 
@@ -92,7 +106,10 @@ def crossvalidation(theta):
     o = np.ones(m).reshape(m,1)
     X = np.append(o,X,axis = 1)
 
-    return cost(X,y,theta)
+    lambdaa = 0
+    p = 2
+
+    return cost(X,y,theta,lambdaa,p)
 
 def test_on_data(theta):
     t=import_test_data()    #Import test data
@@ -106,7 +123,7 @@ def test_on_data(theta):
     o = np.ones(m).reshape(m,1)
     X = np.append(o,X,axis = 1)
 
-    np.savetxt('testres.txt',np.dot(X,theta))
+    return np.dot(X,theta)
 
 
 theta=descent()
