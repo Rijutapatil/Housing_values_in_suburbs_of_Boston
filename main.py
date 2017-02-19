@@ -1,6 +1,5 @@
 import numpy as np
 import math
-#import matplotlib.pyplot as plt
 import os
 
 #Import Training Data
@@ -57,6 +56,14 @@ def output(string,data):
     #final_data = np.append(['ID','MEDV'],final_data,axis=0)
     np.savetxt(string,outdat,delimiter=',',header="ID,MEDV")
 
+#Normalizing a parameter vector
+def normalize(parameter):
+    mean = np.mean(parameter,dtype=float)
+    variance = np.ptp(parameter)
+    new_parameter = (parameter - mean)/variance
+    return np.append([mean, variance],new_parameter)
+
+#Main function
 def descent():
     t=import_train_data() #Import training data
     pc = t[1,:].size -2     #Setting the parameter count
@@ -72,13 +79,9 @@ def descent():
 
     theta = np.zeros(pc+1).reshape(pc+1,1) #Initializing theta vector to 0s
 
-    iter = 120000    #setting the number of iterations
-    alpha = 0.0000063    #setting the step size of descent
-    lambdaa = 0     #setting lambda for regulariser
-    p = 2       #setting p norm
-
-    final = gradientDescent(X,y,theta,alpha,iter,p,lambdaa)   #Obtaining theta via Gradient Descent Algorithm
-    final2 = NormalEquation(X, y, lambdaa)    #Obtaining theta via Normal equation
+    iter = 400000   #setting the number of iterations
+    alpha = 0.00000637   #setting the step size of descent
+    lambdaa = 2     #setting the regularizer
 
     #Outputting files
     output('output.csv',test_on_data(gradientDescent(X,y,theta,alpha,iter,2,lambdaa)))
@@ -86,14 +89,8 @@ def descent():
     output('output_p2.csv',test_on_data(gradientDescent(X,y,theta,alpha,iter,1.5,lambdaa)))
     output('output_p3.csv',test_on_data(gradientDescent(X,y,theta,alpha,iter,1.8,lambdaa)))
 
-    #testing the results
-    print(cost(X,y,final2,lambdaa,p))
-    print(cost(X,y,final,lambdaa,p))
-    np.savetxt('test.txt',final)
-
-    return final2
-
-def crossvalidation(theta):
+#Cross validate the model
+def crossvalidation(thetax):
     t=import_train_data()
     pc = t[1,:].size -2
 
@@ -106,12 +103,10 @@ def crossvalidation(theta):
     o = np.ones(m).reshape(m,1)
     X = np.append(o,X,axis = 1)
 
-    lambdaa = 0
-    p = 2
+    return cost(X,y,thetax,1,2)
 
-    return cost(X,y,theta,lambdaa,p)
-
-def test_on_data(theta):
+#Test on new Data set
+def test_on_data(thetax):
     t=import_test_data()    #Import test data
     pc = t[1,:].size -1     #Setting the parameter count
 
@@ -123,11 +118,6 @@ def test_on_data(theta):
     o = np.ones(m).reshape(m,1)
     X = np.append(o,X,axis = 1)
 
-    return np.dot(X,theta)
+    return np.dot(X,thetax)
 
-
-theta=descent()
-print(crossvalidation(theta))
-test_on_data(theta)
-
-
+descent()
